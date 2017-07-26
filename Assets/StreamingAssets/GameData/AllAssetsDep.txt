@@ -1,0 +1,7 @@
+<AllAssetsDep>
+  <AssetUnit Index="1" FileName="boss_ico" Suffix=".png" Level="1" Deps="" />
+  <AssetUnit Index="2" FileName="m1" Suffix=".mat" Level="2" Deps="1" />
+  <AssetUnit Index="3" FileName="m2" Suffix=".mat" Level="2" Deps="1" />
+  <AssetUnit Index="4" FileName="Sphere" Suffix=".prefab" Level="3" Deps="1,3" />
+  <AssetUnit Index="5" FileName="Cube" Suffix=".prefab" Level="3" Deps="1,2" />
+</AllAssetsDep>

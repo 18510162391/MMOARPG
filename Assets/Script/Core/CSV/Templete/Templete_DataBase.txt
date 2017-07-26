@@ -1,0 +1,61 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using System;
+
+namespace SPFW.DataBase
+{
+	public class &DataBaseContainerClass
+	{
+		&DataBaseAttribute
+	}
+
+	public class &DataBaseTypeClass :IDataBase
+	{
+		public &DataBaseTypeClass(){}
+
+		public const int _nDataBaseID = &DataBaseID;
+		public const string _strDataBasePath = &DataBasePath;
+		public string[][] _data;
+		private &DataBaseContainerClass _tempDataContianer = new &DataBaseContainerClass();
+
+		public int GetDataBaseID()
+		{
+			return _nDataBaseID;
+		}
+
+		public string GetDataBasePath()
+		{
+			return _strDataBasePath;
+		}
+
+		public void Load()
+		{
+			string text = Resources.Load<TextAsset>(GetDataBasePath()).text;
+			_data = CSVConvert.ConvertCSVBody(text);
+		}
+
+		public &DataBaseContainerClass GetData(string key)
+		{
+			for(int i = 0; i< _data.Length; i++)
+			{
+				if(_data[i][1] == key)
+				{
+					&Deserialize
+					return _tempDataContianer;
+				}
+			}
+			return null;
+		}
+
+		public &DataBaseContainerClass GetData(int key)
+        {
+            return this.GetData(key.ToString());
+        }
+
+		public int GetCount()
+		{
+			return _data.Length;
+		}
+	}
+}
