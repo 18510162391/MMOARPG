@@ -1,9 +1,9 @@
 fileFormatVersion: 2
-guid: 26013cce6494baf4fbbe3ac09383c66d
-timeCreated: 1500644937
+guid: 4c8b5477b05b96b4280ee489b29532d6
+timeCreated: 1501237812
 licenseType: Pro
 NativeFormatImporter:
   mainObjectFileID: 100100000
   userData: 
-  assetBundleName: cube.bytes
+  assetBundleName: model/cube.bytes
   assetBundleVariant: 
