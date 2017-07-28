@@ -128,9 +128,15 @@ public class PathUtils
     }
     internal static string GetFileRootPath()
     {
+
+//#if UNITY_EDITOR
+//        return Application.streamingAssetsPath + "/" + GameDefine.BuildTemp;
+//#endif
+//        return Application.persistentDataPath + "/" + GameDefine.BuildTemp;
+
         if (Application.isEditor)
         {
-            return Application.streamingAssetsPath + "/" + GameDefine.BuildTemp;
+            return Application.persistentDataPath + "/" + GameDefine.BuildTemp;
         }
         else
         {

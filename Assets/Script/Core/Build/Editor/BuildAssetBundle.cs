@@ -110,8 +110,9 @@ public class BuildAssetBundle
             string md5 = _GetMD5(Application.dataPath + GameDefine.BuildTargetPath + "/" + name);
 
             XmlElement node = doc.CreateElement("ResItem");
-            node.SetAttribute("Name", fileName);
-            node.SetAttribute("Path", name);
+            node.SetAttribute("name", fileName);
+            node.SetAttribute("path", name);
+            node.SetAttribute("size", _GetFileSize(Application.dataPath + GameDefine.BuildTargetPath + "/" + name));
             node.SetAttribute("md5", md5);
 
             root.AppendChild(node);
@@ -126,6 +127,20 @@ public class BuildAssetBundle
         doc.Save(savePath);
 
         AssetDatabase.Refresh();
+    }
+
+    private static string _GetFileSize(string filePath)
+    {
+        long size = 0;
+        if (File.Exists(filePath))
+        {
+            FileInfo info = new FileInfo(filePath);
+
+            size = info.Length;
+
+            long sizeBytes = File.ReadAllBytes(filePath).LongLength;
+        }
+        return size.ToString();
     }
 
     private static string GetBuildPath()

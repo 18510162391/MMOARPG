@@ -29,7 +29,7 @@ public class GameSetting
         get
         {
 #if UNITY_EDITOR
-            return false;
+            return true;
 #endif
             return true;
         }
@@ -45,7 +45,7 @@ public class GameSetting
 #if UNITY_EDITOR
             return false;
 #endif
-            return true;
+            return false;
         }
     }
 }

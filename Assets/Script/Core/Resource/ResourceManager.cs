@@ -279,7 +279,7 @@ public class ResourceManager : UnitySingleton<ResourceManager>
             if (text == null)
             {
                 Debug.LogError("无法找到文件 " + fileName);
-                return null;
+                return new MemoryStream(new byte[] { });
             }
             return new MemoryStream(text.bytes);
         }

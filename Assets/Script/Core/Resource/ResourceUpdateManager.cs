@@ -8,9 +8,35 @@ using System.Collections;
 class ResourceUpdateManager : UnitySingleton<ResourceUpdateManager>
 {
     private GameDefine.OnResourceUpdateComplete _onResourceUpdateCompplete;
+    private Action _onUpdateFinish;
+    private bool _enableResCheck = false;
+
     private List<FileContainer> _RemoteFile = new List<FileContainer>();
     private List<FileContainer> _LocalFile = new List<FileContainer>();
     private List<FileContainer> _WaitUpdateFile = new List<FileContainer>();
+    private List<ResourceHttpRequest> _resHttpRequest = new List<ResourceHttpRequest>();
+
+    private long _TotalWaitUpdateSize;//需要更新资源的总大小
+    public long HasUpdatedSize;//已经完成更新的资源大小
+
+    void Update()
+    {
+        if (!this._enableResCheck)
+        {
+            return;
+        }
+
+        if (this._resHttpRequest.Count <= 0 || this._resHttpRequest.Find(p => p.HasLoadFinish == false) == null)
+        {
+            this._enableResCheck = false;
+
+            if (this._onUpdateFinish != null)
+            {
+                this._onUpdateFinish();
+            }
+        }
+        Debug.LogError("已经更新资源：" + this.HasUpdatedSize);
+    }
 
     public void BeginUpdate(GameDefine.OnResourceUpdateComplete onResourceUpdateCompplete)
     {
@@ -23,7 +49,6 @@ class ResourceUpdateManager : UnitySingleton<ResourceUpdateManager>
             {
                 _onResourceUpdateCompplete();
             }
-
             return;
         }
 
@@ -32,7 +57,6 @@ class ResourceUpdateManager : UnitySingleton<ResourceUpdateManager>
         {
             if (!Directory.Exists(Application.persistentDataPath + "/" + GameDefine.BuildTemp))
             {
-                Debug.LogError("------------------------------移动资源 " + Application.persistentDataPath + "/" + GameDefine.BuildTemp);
                 this._MoveResToPersistentDataPath();
             }
         }
@@ -62,7 +86,24 @@ class ResourceUpdateManager : UnitySingleton<ResourceUpdateManager>
 
     private void _BeginUpdate(Action onUpdateComplete)
     {
+        this._enableResCheck = true;
+        this._onUpdateFinish = onUpdateComplete;
+        this._resHttpRequest.Clear();
 
+        for (int i = 0; i < this._WaitUpdateFile.Count; i++)
+        {
+            ResourceHttpRequest pRequest = new ResourceHttpRequest(_WaitUpdateFile[i].FilePath);
+            _resHttpRequest.Add(pRequest);
+        }
+        if (_resHttpRequest.Count > 0)
+        {
+            ResourceHttpRequest pRequestResources = new ResourceHttpRequest("Resources.txt");
+            ResourceHttpRequest pRequestAssetDep = new ResourceHttpRequest("AllAssetsDep.txt");
+            _resHttpRequest.Add(pRequestResources);
+            _resHttpRequest.Add(pRequestAssetDep);
+
+            ResourceHttpRequest.Load(_resHttpRequest);
+        }
     }
 
     /// <summary>
@@ -71,6 +112,7 @@ class ResourceUpdateManager : UnitySingleton<ResourceUpdateManager>
     private void _CheckFile()
     {
         this._WaitUpdateFile.Clear();
+        this._TotalWaitUpdateSize = 0;
 
         for (int i = 0; i < this._RemoteFile.Count; i++)
         {
@@ -81,6 +123,8 @@ class ResourceUpdateManager : UnitySingleton<ResourceUpdateManager>
             {
                 //如果本地资源不存在该资源，则认为该资源是需要更新的。
                 this._WaitUpdateFile.Add(remoteFile);
+                _TotalWaitUpdateSize += remoteFile.fileSize;
+
                 continue;
             }
 
@@ -88,9 +132,13 @@ class ResourceUpdateManager : UnitySingleton<ResourceUpdateManager>
             {
                 //如果本地资源的md5与远程资源的md5不同，则认为该资源是需要更新的。
                 this._WaitUpdateFile.Add(remoteFile);
+                _TotalWaitUpdateSize += remoteFile.fileSize;
+
                 continue;
             }
         }
+
+        Debug.LogError("需要更新的资源：" + this._TotalWaitUpdateSize);
     }
 
     /// <summary>
@@ -102,28 +150,33 @@ class ResourceUpdateManager : UnitySingleton<ResourceUpdateManager>
 
         StreamReader sr = ResourceManager.OpenText("Resources.txt");
 
-        XmlDocument xml = new XmlDocument();
-        xml.LoadXml(sr.ReadToEnd());
+        string stream = sr.ReadToEnd();
 
-        XmlElement root = xml.DocumentElement;
-        IEnumerator itor = root.GetEnumerator();
-
-        while (itor.MoveNext())
+        if (!string.IsNullOrEmpty(stream))
         {
-            XmlElement element = itor.Current as XmlElement;
+            XmlDocument xml = new XmlDocument();
+            xml.LoadXml(stream);
 
-            string fileName = element.GetAttribute("Name");
-            string filePath = element.GetAttribute("Path");
-            string fileMD5 = element.GetAttribute("md5");
+            XmlElement root = xml.DocumentElement;
+            IEnumerator itor = root.GetEnumerator();
 
-            FileContainer container = new FileContainer();
-            container.FileName = fileName;
-            container.FilePath = filePath;
-            container.FileMD5 = fileMD5;
+            while (itor.MoveNext())
+            {
+                XmlElement element = itor.Current as XmlElement;
 
-            this._LocalFile.Add(container);
+                string fileName = element.GetAttribute("name");
+                string filePath = element.GetAttribute("path");
+                string fileMD5 = element.GetAttribute("md5");
+
+                FileContainer container = new FileContainer();
+                container.FileName = fileName;
+                container.FilePath = filePath;
+                container.FileMD5 = fileMD5;
+
+                this._LocalFile.Add(container);
+            }
+            sr.Close();
         }
-        sr.Close();
     }
 
     /// <summary>
@@ -133,7 +186,6 @@ class ResourceUpdateManager : UnitySingleton<ResourceUpdateManager>
     private void _LoadRemoteFile(Action onLoadFinish)
     {
         this._RemoteFile.Clear();
-
         StartCoroutine(_BeginLoadRemoteFile(onLoadFinish));
     }
 
@@ -150,26 +202,31 @@ class ResourceUpdateManager : UnitySingleton<ResourceUpdateManager>
         }
         else
         {
-            XmlDocument xml = new XmlDocument();
-            xml.LoadXml(www.text);
-
-            XmlElement root = xml.DocumentElement;
-            IEnumerator itor = root.GetEnumerator();
-
-            while (itor.MoveNext())
+            if (!string.IsNullOrEmpty(www.text))
             {
-                XmlElement element = itor.Current as XmlElement;
+                XmlDocument xml = new XmlDocument();
+                xml.LoadXml(www.text);
 
-                string fileName = element.GetAttribute("Name");
-                string filePath = element.GetAttribute("Path");
-                string fileMD5 = element.GetAttribute("md5");
+                XmlElement root = xml.DocumentElement;
+                IEnumerator itor = root.GetEnumerator();
 
-                FileContainer container = new FileContainer();
-                container.FileName = fileName;
-                container.FilePath = filePath;
-                container.FileMD5 = fileMD5;
+                while (itor.MoveNext())
+                {
+                    XmlElement element = itor.Current as XmlElement;
 
-                this._RemoteFile.Add(container);
+                    string fileName = element.GetAttribute("name");
+                    string filePath = element.GetAttribute("path");
+                    string fileMD5 = element.GetAttribute("md5");
+                    string fileSize = element.GetAttribute("size");
+
+                    FileContainer container = new FileContainer();
+                    container.FileName = fileName;
+                    container.FilePath = filePath;
+                    container.FileMD5 = fileMD5;
+                    container.fileSize = long.Parse(fileSize);
+
+                    this._RemoteFile.Add(container);
+                }
             }
         }
 
@@ -206,13 +263,14 @@ class ResourceUpdateManager : UnitySingleton<ResourceUpdateManager>
             File.Copy(filePath, moveToPath + fileName, true);
         }
     }
+}
 
+public class FileContainer
+{
+    public string FileName { get; set; }
+    public string FilePath { get; set; }
 
-    public class FileContainer
-    {
-        public string FileName { get; set; }
-        public string FilePath { get; set; }
+    public string FileMD5 { get; set; }
 
-        public string FileMD5 { get; set; }
-    }
+    public long fileSize { get; set; }
 }

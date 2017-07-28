@@ -55,6 +55,7 @@ public class ResourceHttpRequest
         int read = rs.OrginalStream.EndRead(ar);
         if (read > 0)
         {
+            ResourceUpdateManager.Instance.HasUpdatedSize += read;
             rs.fs.Write(rs.Buffer, 0, read);
             rs.fs.Flush();
             rs.OrginalStream.BeginRead(rs.Buffer, 0, WebReqState.BufferSize, new AsyncCallback(ReadDataCallback), rs);

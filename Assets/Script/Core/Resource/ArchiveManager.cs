@@ -37,8 +37,8 @@ public class ArchiveManager : Singleton<ArchiveManager>
         {
             XmlElement resNote = itor.Current as XmlElement;
 
-            string name = resNote.GetAttribute("Name");
-            string path = resNote.GetAttribute("Path");
+            string name = resNote.GetAttribute("name");
+            string path = resNote.GetAttribute("path");
             string md5 = resNote.GetAttribute("md5");
 
             if (!this._DicFile.ContainsKey(name))
