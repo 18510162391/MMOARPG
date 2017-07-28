@@ -1,7 +1,4 @@
 <Resources>
-  <ResItem Name="boss_ico" Path="common/boss_ico.bytes" md5="58539d119dd18cf1450cbd01f1ec5704" />
-  <ResItem Name="cube" Path="cube.bytes" md5="cf7bbddb3413762d0e0c4ee0124083ee" />
-  <ResItem Name="m1" Path="m1.bytes" md5="b19ca7e6ffbab3ae22fe978627d5786a" />
-  <ResItem Name="m2" Path="model/m2.bytes" md5="4bb92c8020b55b3b67f3c609edc83a8f" />
-  <ResItem Name="sphere" Path="model/sphere.bytes" md5="e85079dbb2ec01db6d56f6a6c33b5067" />
+  <ResItem name="cube" path="model/cube.bytes" size="1786" md5="6e1fd3b1380551d0fe0c3051e6a88c18" />
+  <ResItem name="m1" path="model/m1.bytes" size="38592" md5="ec1eff054e899ead59a4194b703277da" />
 </Resources>
