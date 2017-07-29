@@ -1,4 +1,1 @@
-<AllAssetsDep>
-  <AssetUnit Index="1" FileName="m1" Suffix=".mat" Level="1" Deps="" />
-  <AssetUnit Index="2" FileName="Cube" Suffix=".prefab" Level="2" Deps="1" />
-</AllAssetsDep>
+<AllAssetsDep />

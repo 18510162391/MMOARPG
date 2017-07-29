@@ -12,7 +12,7 @@ public class GameDefine
     private GameDefine() { }
 
     public static string BuildTemp = "GameData";
-    public static string BuildTargetPath = "/StreamingAssets/" + BuildTemp;
+    public static string BuildTargetPath = "/../Build/" + BuildTemp;
 
     public static string AssetBundleSuffix = ".bytes";
     public static string REMOTE_CDN = "http://127.0.0.1/";

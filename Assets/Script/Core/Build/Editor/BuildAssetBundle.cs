@@ -13,7 +13,7 @@ public class BuildAssetBundle
 
     private static List<string> _ScenePaths = new List<string>();
     private static List<string> _ResPaths = new List<string>();
-    private static List<string> _commonrResPaths = new List<string>();
+    public static List<string> CommonrResPaths = new List<string>();
 
     private static Dictionary<int, List<AssetUnit>> _DicAssetInfo = new Dictionary<int, List<AssetUnit>>();
 
@@ -66,8 +66,6 @@ public class BuildAssetBundle
         //1、获取需要打包的资源
         _GetResList();
 
-
-
         //2、获取需要打包的场景
         _GetSceneList();
 
@@ -77,9 +75,6 @@ public class BuildAssetBundle
         //4、生成资源依赖XML信息
         _SaveAssetUnit();
 
-        //5、解析公用资源
-
-        _GetCommonAssets();
 #if UNITY_5
         //5.1设置AssetBundle的名称
         _SetAssetBundleName();
@@ -173,27 +168,21 @@ public class BuildAssetBundle
     /// <summary>
     /// 从所有依赖资源中分析出公用的资源
     /// </summary>
-    private static void _GetCommonAssets()
+    private static void _GetCommonAssets(string[] allResDeps)
     {
-        _commonrResPaths.Clear();
+        CommonrResPaths.Clear();
 
-        List<string> allResDeps = new List<string>();
+        List<string> allResDep = new List<string>();
+        allResDep.AddRange(allResDeps);
 
-        for (int i = 0; i < _ResPaths.Count; i++)
-        {
-            string resPath = _ResPaths[i];
-            string[] deps = AssetDatabase.GetDependencies(resPath);
-            allResDeps.AddRange(deps);
-        }
-
-        for (int i = 0; i < allResDeps.Count; i++)
+        for (int i = 0; i < allResDep.Count; i++)
         {
             string depPath = allResDeps[i];
 
-            if (allResDeps.FindAll(p => p == depPath).Count > 1)
+            if (allResDep.FindAll(p => p == depPath).Count > 1)
             {
                 //存在多个资源共享这一个依赖
-                _commonrResPaths.Add(depPath);
+                CommonrResPaths.Add(depPath);
             }
         }
     }
@@ -204,37 +193,47 @@ public class BuildAssetBundle
     /// </summary>
     private static void _SetAssetBundleName()
     {
-        for (int i = 0; i < _ResPaths.Count; i++)
+        AssetDatabase.RemoveUnusedAssetBundleNames();
+
+        foreach (var item in _DicAssetInfo)
         {
-            string resPath = _ResPaths[i];
+            List<AssetUnit> assetUnit = item.Value;
 
-            //设置资源名称
-            _SetAssetBundleName(resPath, resPath);
-
-            //依赖资源设置资源名称
-            string[] depRes = AssetDatabase.GetDependencies(resPath);
-
-            for (int j = 0; j < depRes.Length; j++)
+            for (int i = 0; i < assetUnit.Count; i++)
             {
-                string depPath = depRes[j];
-                string bundleName = string.Empty;
+                AssetUnit unit = assetUnit[i];
 
-                if (_commonrResPaths.Contains(depPath))
-                {
-                    //此资源是共享资源，放在common文件夹下面
-                    bundleName = Path.Combine(GameDefine.CommonAssetSavePath, PathUtils.GetFileName(depPath, true));
+                string resPath = unit.AssetPath;
 
-                }
-                else
-                {
-                    bundleName = PathUtils.getPath(resPath) + PathUtils.GetFileName(depPath, true);
-                }
-
-                _SetAssetBundleName(depPath, bundleName);
+                //设置资源名称
+                _SetAssetBundleName(resPath, resPath);
             }
         }
 
-        AssetDatabase.RemoveUnusedAssetBundleNames();
+        //for (int i = 0; i < _ResPaths.Count; i++)
+        //{
+        //    string resPath = _ResPaths[i];
+
+        //    //设置资源名称
+        //    _SetAssetBundleName(resPath, resPath);
+
+        //    //依赖资源设置资源名称
+        //    string[] depRes = AssetDatabase.GetDependencies(resPath);
+
+        //    for (int j = 0; j < depRes.Length; j++)
+        //    {
+        //        string depPath = depRes[j];
+        //        string bundleName = string.Empty;
+
+        //        if (CommonrResPaths.Contains(depPath))
+        //        {
+        //            //此资源是共享资源，放在common文件夹下面
+        //            bundleName = Path.Combine(GameDefine.CommonAssetSavePath, PathUtils.GetFileName(depPath, true));
+
+        //            _SetAssetBundleName(depPath, bundleName);
+        //        }
+        //    }
+        //}
     }
 
 
@@ -254,15 +253,26 @@ public class BuildAssetBundle
         }
 
         string assetName = string.Empty;
-        if (_commonrResPaths.Contains(AssetPath))
+        string suffix = PathUtils.GetFileSuffix(AssetPath);
+
+        if (CommonrResPaths.Contains(AssetPath))
         {
-            assetName = bundleName.Replace("Assets" + GameDefine.BuildTargetPath + "/", "");
+            assetName = GameDefine.CommonAssetSavePath + PathUtils.GetFileName(AssetPath, true);
         }
         else
         {
-            assetName = bundleName.Replace("Assets" + GameDefine.BuildSourcePath_Res + "/", "");
+            if (suffix == ".unity")
+            {
+                //如果是场景的话，放在Scene文件夹下。
+                assetName = "Scene" + PathUtils.GetFileName(AssetPath, true);
+            }
+            else
+            {
+                //如果是资源的话，放在对应的文件夹下
+                assetName = bundleName.Replace("Assets" + GameDefine.BuildSourcePath_Res + "/", "");
+            }
         }
-        assetName = assetName.Replace(PathUtils.GetFileSuffix(AssetPath), GameDefine.AssetBundleSuffix);
+        assetName = assetName.Replace(suffix, GameDefine.AssetBundleSuffix);
 
         if (!string.IsNullOrEmpty(pImporter.assetBundleName) && pImporter.assetBundleName != assetName.ToLower())
         {
@@ -308,6 +318,7 @@ public class BuildAssetBundle
     {
 #if UNITY_5
 
+        //资源打包
         string buildPath = Application.dataPath + GameDefine.BuildTargetPath;
         PathUtils.CheckPath(buildPath);
 
@@ -406,7 +417,6 @@ public class BuildAssetBundle
 
         savePath = savePath + "/AllAssetsDep.txt";
         doc.Save(savePath);
-        AssetDatabase.Refresh();
     }
 
 
@@ -482,7 +492,7 @@ public class BuildAssetBundle
         _DicAssetInfo.Clear();
 
         List<string> allRes = new List<string>();
-        //allRes.AddRange(_ScenePaths);
+        allRes.AddRange(_ScenePaths);
         allRes.AddRange(_ResPaths);
 
         if (allRes.Count <= 0)
@@ -494,10 +504,18 @@ public class BuildAssetBundle
 
         string[] allResDeps = AssetDatabase.GetDependencies(allRes.ToArray());
 
+        _GetCommonAssets(allResDeps);
+
         Dictionary<int, List<AssetUnit>> dicAllAsset = new Dictionary<int, List<AssetUnit>>();
         for (int i = 0; i < allResDeps.Length; i++)
         {
             string filePath = allResDeps[i];
+
+            if (CommonrResPaths.Contains(filePath) || allRes.Contains(filePath))
+            {
+
+            }
+
             AssetUnit unit = new AssetUnit(filePath);
 
             List<AssetUnit> assetList = null;
@@ -551,7 +569,8 @@ public class BuildAssetBundle
             string file = scenes[i];
 
             string suffix = PathUtils.GetFileSuffix(file);
-            if (suffix == ".meta")
+            string fileName = PathUtils.GetFileName(file, false);
+            if (suffix == ".meta" || fileName == "GameStart")
             {
                 continue;
             }
@@ -559,7 +578,7 @@ public class BuildAssetBundle
             file = file.Replace("\\", "/");
 
             file = PathUtils.GetAssetPath(file);
-            //D:/Personal/Moba.git/trunk/Moba/Assets/Scene/TestScene.unity
+            ///Assets/Scene/TestScene.unity
             _ScenePaths.Add(file);
         }
     }
@@ -659,7 +678,7 @@ public class AssetUnit
         for (int i = 0; i < deps.Length; i++)
         {
             string depItem = deps[i];
-            if (depItem == AssetPath)
+            if (depItem == AssetPath || !BuildAssetBundle.CommonrResPaths.Contains(depItem))
             {
                 continue;
             }

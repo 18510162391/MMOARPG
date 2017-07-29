@@ -1,4 +1,0 @@
-<Resources>
-  <ResItem name="cube" path="model/cube.bytes" size="1786" md5="6e1fd3b1380551d0fe0c3051e6a88c18" />
-  <ResItem name="m1" path="model/m1.bytes" size="38592" md5="ec1eff054e899ead59a4194b703277da" />
-</Resources>
